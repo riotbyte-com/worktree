@@ -1,0 +1,76 @@
+use clap::{Parser, Subcommand};
+use clap_complete::Shell;
+
+#[derive(Parser)]
+#[command(name = "worktree")]
+#[command(about = "Manage git worktrees with port allocation", long_about = None)]
+#[command(version)]
+pub struct Cli {
+    #[command(subcommand)]
+    pub command: Option<Commands>,
+}
+
+#[derive(Subcommand)]
+pub enum Commands {
+    /// Create a new worktree
+    New {
+        /// Parameter for the new worktree (e.g., branch name, issue ID)
+        param: Option<String>,
+    },
+
+    /// Initialize worktree configuration for this project
+    Init {
+        /// Skip interactive prompts, use defaults
+        #[arg(long)]
+        defaults: bool,
+
+        /// Skip script generation
+        #[arg(long)]
+        no_scripts: bool,
+    },
+
+    /// Execute the project's run script
+    Run,
+
+    /// Execute the project's stop script
+    Stop,
+
+    /// Clean up and delete a worktree
+    Close {
+        /// Worktree name to close (optional if inside a worktree)
+        name: Option<String>,
+
+        /// Force close without confirmation
+        #[arg(short, long)]
+        force: bool,
+
+        /// Interactively select worktree to close
+        #[arg(short, long)]
+        interactive: bool,
+    },
+
+    /// List all active worktrees
+    List {
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Clean up inactive worktrees
+    Cleanup {
+        /// Only show worktrees older than N days
+        #[arg(long)]
+        older_than: Option<u32>,
+
+        /// Force cleanup without confirmation
+        #[arg(short, long)]
+        force: bool,
+    },
+
+    /// Generate shell completion scripts
+    Completions {
+        /// Shell to generate completions for
+        #[arg(value_enum)]
+        shell: Shell,
+    },
+}

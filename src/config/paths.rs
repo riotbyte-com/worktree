@@ -1,0 +1,42 @@
+use anyhow::{Context, Result};
+use std::path::PathBuf;
+
+/// Returns the global worktree directory (~/.worktree/)
+pub fn global_dir() -> Result<PathBuf> {
+    dirs::home_dir()
+        .context(
+            "Could not determine home directory. Please ensure HOME environment variable is set.",
+        )
+        .map(|p| p.join(".worktree"))
+}
+
+/// Returns the global worktrees storage directory (~/.worktree/worktrees/)
+pub fn global_worktrees_dir() -> Result<PathBuf> {
+    Ok(global_dir()?.join("worktrees"))
+}
+
+/// Returns the port allocations file path (~/.worktree/port-allocations.json)
+pub fn allocations_file() -> Result<PathBuf> {
+    Ok(global_dir()?.join("port-allocations.json"))
+}
+
+/// Returns the project config directory relative to a given root
+pub fn project_config_dir_in(root: &std::path::Path) -> PathBuf {
+    root.join(".worktree")
+}
+
+/// Returns the settings file path relative to a given root
+pub fn settings_file_in(root: &std::path::Path) -> PathBuf {
+    project_config_dir_in(root).join("settings.json")
+}
+
+/// Returns the local settings file path relative to a given root
+pub fn local_settings_file_in(root: &std::path::Path) -> PathBuf {
+    project_config_dir_in(root).join("settings.local.json")
+}
+
+/// Ensures the global directory exists
+pub fn ensure_global_dir() -> Result<()> {
+    std::fs::create_dir_all(global_dir()?)?;
+    Ok(())
+}

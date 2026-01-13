@@ -1,0 +1,7 @@
+{
+  "portCount": 10,
+  "portRangeStart": 50000,
+  "portRangeEnd": 60000,
+  "branchPrefix": "worktree/",
+  "autoLaunchTerminal": false
+}

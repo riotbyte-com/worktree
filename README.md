@@ -1,6 +1,6 @@
-# Claude Worktree Command
+# worktree
 
-A Claude Code command for managing isolated git worktrees with automatic port allocation and lifecycle scripts.
+A standalone CLI tool for managing isolated git worktrees with automatic port allocation and lifecycle scripts.
 
 ## Features
 
@@ -9,65 +9,162 @@ A Claude Code command for managing isolated git worktrees with automatic port al
 - Lifecycle scripts (setup, run, stop, close) for each project
 - Per-project configuration with team-shared and personal settings
 - Automatic terminal launching for new worktrees
+- Optional Claude CLI integration for intelligent script generation
 
 ## Installation
 
-Copy the files to your Claude configuration directory:
+### Quick Install (Recommended)
+
+Install the latest version:
 
 ```bash
-cp -r commands ~/.claude/
-cp -r scripts ~/.claude/
+curl -fsSL https://raw.githubusercontent.com/dbrekelmans/claude-worktree/main/install.sh | bash
+```
+
+Install a specific version:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dbrekelmans/claude-worktree/main/install.sh | bash -s v1.0.0
+```
+
+The binary is installed to `~/.local/bin` by default. Set `INSTALL_DIR` to customize:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dbrekelmans/claude-worktree/main/install.sh | INSTALL_DIR=/usr/local/bin bash
+```
+
+### From Source
+
+```bash
+cargo install --path .
+```
+
+### Build Release Binary
+
+```bash
+cargo build --release
+# Binary is at ./target/release/worktree
 ```
 
 ## Usage
 
-Use `/worktree` in Claude Code to manage worktrees.
+```
+worktree [COMMAND] [OPTIONS]
 
-### Commands
+Commands:
+  new [param]   Create a new worktree (default if no command given)
+  init          Initialize worktree configuration for your project
+  run           Start the development environment
+  stop          Stop running services
+  close         Clean up and delete the worktree
+  list          Show all active worktrees
+```
 
-| Command | Description |
-|---------|-------------|
-| `/worktree` | Create a new worktree with allocated ports |
-| `/worktree <param>` | Create worktree with parameter (configurable via SETUP.md) |
-| `/worktree init` | Initialize worktree configuration for your project |
-| `/worktree run` | Start the development environment |
-| `/worktree stop` | Stop running services |
-| `/worktree close` | Clean up and delete the worktree |
-| `/worktree list` | Show all active worktrees |
+## Getting Started
 
-### Getting Started
+### 1. Initialize your project (first time only)
 
-1. **Initialize your project** (first time only):
-   ```
-   /worktree init
-   ```
-   This creates configuration files and optionally generates lifecycle scripts based on your project.
+```bash
+worktree init
+```
 
-2. **Create a worktree**:
-   ```
-   /worktree
-   ```
-   Or with a parameter (e.g., Linear issue ID):
-   ```
-   /worktree CHR-123
-   ```
+This creates a `.worktree/` directory with:
+- `settings.json` - Team-shared settings (commit to repo)
+- `settings.local.json` - Personal settings (gitignored)
+- `setup.sh`, `run.sh`, `stop.sh`, `close.sh` - Lifecycle scripts
 
-3. **In the worktree**, run services:
-   ```
-   /worktree run
-   ```
+If Claude CLI is installed, it can optionally generate intelligent scripts based on your project.
 
-4. **When done**, close the worktree:
-   ```
-   /worktree close
-   ```
+### 2. Create a worktree
 
-## Documentation
+```bash
+worktree
+```
 
-For detailed documentation on configuration, lifecycle scripts, port allocation, and more, see:
+Or with a parameter (e.g., issue ID, branch name):
 
-- [`scripts/worktree/README.template.md`](scripts/worktree/README.template.md) - Full documentation (also copied to your project during init)
+```bash
+worktree new ISSUE-123
+```
+
+This will:
+- Create a git worktree with a random name (e.g., `swift-falcon-a3b2`)
+- Allocate ports for the worktree
+- Run the setup script
+- Launch a new terminal (if configured)
+
+### 3. Work in the worktree
+
+```bash
+worktree run    # Start development environment
+worktree stop   # Stop services
+```
+
+### 4. Close when done
+
+```bash
+worktree close
+```
+
+This deallocates ports and removes the git worktree.
+
+## Configuration
+
+### Settings (`settings.json`)
+
+```json
+{
+  "portCount": 10,
+  "portRangeStart": 50000,
+  "portRangeEnd": 60000,
+  "branchPrefix": "worktree/",
+  "autoLaunchTerminal": true
+}
+```
+
+### Local Settings (`settings.local.json`)
+
+```json
+{
+  "worktreeDir": "/custom/path/to/worktrees"
+}
+```
+
+## Environment Variables
+
+Lifecycle scripts receive these environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `WORKTREE_NAME` | Unique worktree name (e.g., `swift-falcon-a3b2`) |
+| `WORKTREE_PROJECT` | Project name |
+| `WORKTREE_DIR` | Full path to worktree directory |
+| `WORKTREE_ORIGINAL_DIR` | Full path to original project |
+| `WORKTREE_PORT_0` - `WORKTREE_PORT_9` | Allocated ports |
+| `WORKTREE_PARAM` | Parameter passed to `worktree new` |
+
+## Directory Structure
+
+```
+~/.worktree/
+├── worktrees/
+│   └── my-project/
+│       ├── swift-falcon-a3b2/
+│       │   ├── state.json
+│       │   └── (git worktree files)
+│       └── happy-tiger-c4d5/
+└── port-allocations.json
+
+your-project/
+└── .worktree/
+    ├── settings.json
+    ├── settings.local.json
+    ├── setup.sh
+    ├── run.sh
+    ├── stop.sh
+    └── close.sh
+```
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License
