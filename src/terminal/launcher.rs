@@ -13,6 +13,8 @@ fn shell_escape(s: &str) -> String {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(clippy::enum_variant_names)]
 pub enum Terminal {
+    // Cross-platform
+    Tmux,
     // macOS
     AppleTerminal,
     ITerm2,
@@ -35,6 +37,7 @@ pub enum Terminal {
 impl Terminal {
     pub fn name(&self) -> &'static str {
         match self {
+            Terminal::Tmux => "tmux",
             Terminal::AppleTerminal => "Terminal.app",
             Terminal::ITerm2 => "iTerm2",
             Terminal::Warp => "Warp",
@@ -50,6 +53,29 @@ impl Terminal {
             Terminal::Kitty => "Kitty",
             #[cfg(target_os = "linux")]
             Terminal::Alacritty => "Alacritty",
+        }
+    }
+
+    /// Parse a terminal from a string (case-insensitive)
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "tmux" => Some(Terminal::Tmux),
+            "terminal" | "terminal.app" | "apple_terminal" => Some(Terminal::AppleTerminal),
+            "iterm" | "iterm2" => Some(Terminal::ITerm2),
+            "warp" => Some(Terminal::Warp),
+            "ghostty" => Some(Terminal::Ghostty),
+            "vscode" | "code" => Some(Terminal::VSCode),
+            #[cfg(target_os = "linux")]
+            "gnome-terminal" | "gnome" => Some(Terminal::GnomeTerminal),
+            #[cfg(target_os = "linux")]
+            "konsole" => Some(Terminal::Konsole),
+            #[cfg(target_os = "linux")]
+            "xfce4-terminal" | "xfce" => Some(Terminal::Xfce4Terminal),
+            #[cfg(target_os = "linux")]
+            "kitty" => Some(Terminal::Kitty),
+            #[cfg(target_os = "linux")]
+            "alacritty" => Some(Terminal::Alacritty),
+            _ => None,
         }
     }
 }
@@ -110,10 +136,16 @@ pub fn detect_terminal() -> Option<Terminal> {
 }
 
 /// Launch a new terminal window in the specified directory
+/// Note: For Tmux, use `launch_tmux_session` instead as it requires additional context
 pub fn launch(terminal: &Terminal, dir: &Path) -> Result<()> {
     let dir_str = dir.to_str().context("Invalid directory path")?;
 
     match terminal {
+        Terminal::Tmux => {
+            anyhow::bail!(
+                "Use launch_tmux_session for tmux, which requires project and worktree names"
+            )
+        }
         Terminal::AppleTerminal => launch_apple_terminal(dir_str),
         Terminal::ITerm2 => launch_iterm2(dir_str),
         Terminal::Warp => launch_warp(dir_str),
@@ -130,6 +162,80 @@ pub fn launch(terminal: &Terminal, dir: &Path) -> Result<()> {
         #[cfg(target_os = "linux")]
         Terminal::Alacritty => launch_alacritty(dir_str),
     }
+}
+
+/// Generate the tmux session name for a worktree
+pub fn tmux_session_name(project_name: &str, worktree_name: &str) -> String {
+    format!("{}-{}", project_name, worktree_name)
+}
+
+/// Check if we're currently inside a tmux session
+fn is_inside_tmux() -> bool {
+    std::env::var("TMUX").is_ok()
+}
+
+/// Launch a new tmux session for a worktree
+pub fn launch_tmux_session(project_name: &str, worktree_name: &str, dir: &Path) -> Result<()> {
+    let dir_str = dir.to_str().context("Invalid directory path")?;
+    let session_name = tmux_session_name(project_name, worktree_name);
+    let inside_tmux = is_inside_tmux();
+
+    // Check if session already exists
+    let session_exists = Command::new("tmux")
+        .args(["has-session", "-t", &session_name])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    if !session_exists {
+        // Create new session (always detached first)
+        Command::new("tmux")
+            .args(["new-session", "-d", "-s", &session_name, "-c", dir_str])
+            .output()
+            .context("Failed to create tmux session")?;
+    }
+
+    // Switch to or attach to the session
+    if inside_tmux {
+        // Already in tmux, switch to the session
+        Command::new("tmux")
+            .args(["switch-client", "-t", &session_name])
+            .status()
+            .context("Failed to switch to tmux session")?;
+    } else {
+        // Not in tmux, attach to the session
+        Command::new("tmux")
+            .args(["attach-session", "-t", &session_name])
+            .status()
+            .context("Failed to attach to tmux session")?;
+    }
+
+    Ok(())
+}
+
+/// Kill a tmux session for a worktree
+pub fn kill_tmux_session(project_name: &str, worktree_name: &str) -> Result<bool> {
+    let session_name = tmux_session_name(project_name, worktree_name);
+
+    // Check if session exists
+    let check = Command::new("tmux")
+        .args(["has-session", "-t", &session_name])
+        .output();
+
+    if let Ok(output) = check {
+        if output.status.success() {
+            // Session exists, kill it
+            let result = Command::new("tmux")
+                .args(["kill-session", "-t", &session_name])
+                .output()
+                .context("Failed to kill tmux session")?;
+
+            return Ok(result.status.success());
+        }
+    }
+
+    // Session doesn't exist
+    Ok(false)
 }
 
 fn launch_apple_terminal(dir: &str) -> Result<()> {

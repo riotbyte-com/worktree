@@ -118,9 +118,46 @@ This deallocates ports and removes the git worktree.
   "portRangeStart": 50000,
   "portRangeEnd": 60000,
   "branchPrefix": "worktree/",
-  "autoLaunchTerminal": true
+  "autoLaunchTerminal": true,
+  "terminal": "iterm2"
 }
 ```
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `portCount` | Number of ports to allocate per worktree | `10` |
+| `portRangeStart` | Start of port allocation range | `50000` |
+| `portRangeEnd` | End of port allocation range | `60000` |
+| `branchPrefix` | Prefix for worktree branch names | `worktree/` |
+| `autoLaunchTerminal` | Automatically open terminal on worktree creation | `true` |
+| `terminal` | Terminal emulator to use (see below) | Auto-detect |
+
+### Terminal Options
+
+When `terminal` is not set, the tool auto-detects your terminal. You can explicitly set it to one of:
+
+**Cross-platform:**
+| Value | Terminal |
+|-------|----------|
+| `tmux` | tmux (creates a named session) |
+
+**macOS:**
+| Value | Terminal |
+|-------|----------|
+| `terminal`, `terminal.app`, `apple_terminal` | Terminal.app |
+| `iterm`, `iterm2` | iTerm2 |
+| `warp` | Warp |
+| `ghostty` | Ghostty |
+| `vscode`, `code` | VS Code |
+
+**Linux:**
+| Value | Terminal |
+|-------|----------|
+| `gnome-terminal`, `gnome` | GNOME Terminal |
+| `konsole` | Konsole |
+| `xfce4-terminal`, `xfce` | Xfce Terminal |
+| `kitty` | Kitty |
+| `alacritty` | Alacritty |
 
 ### Local Settings (`settings.local.json`)
 

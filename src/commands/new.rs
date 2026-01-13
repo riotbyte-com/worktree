@@ -125,9 +125,22 @@ pub fn execute(param: Option<String>) -> Result<()> {
     // Launch terminal if configured
     if settings.auto_launch_terminal {
         println!();
-        if let Some(term) = terminal::detect_terminal() {
+        // Get terminal from settings or auto-detect
+        let term = settings
+            .terminal
+            .as_ref()
+            .and_then(|t| terminal::Terminal::from_str(t))
+            .or_else(terminal::detect_terminal);
+
+        if let Some(term) = term {
             println!("  Launching {}...", term.name());
-            if let Err(e) = terminal::launch(&term, &worktree_dir) {
+            let launch_result = if term == terminal::Terminal::Tmux {
+                terminal::launch_tmux_session(&project_name, &worktree_name, &worktree_dir)
+            } else {
+                terminal::launch(&term, &worktree_dir)
+            };
+
+            if let Err(e) = launch_result {
                 println!("  {} Failed to launch terminal: {}", "⚠".yellow(), e);
                 println!(
                     "  Run manually: {}",

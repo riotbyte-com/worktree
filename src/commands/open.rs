@@ -3,17 +3,16 @@ use colored::Colorize;
 use std::io::{self, Write};
 use walkdir::WalkDir;
 
-use super::common::{self, RemoveOptions};
-use crate::config::{paths, state::WorktreeState};
+use crate::config::{paths, settings::MergedSettings, state::WorktreeState};
 use crate::terminal;
 
-pub fn execute(name: Option<String>, force: bool, interactive: bool) -> Result<()> {
-    // Determine which worktree to close
+pub fn execute(name: Option<String>, interactive: bool) -> Result<()> {
+    // Determine which worktree to open
     let worktree_state = resolve_worktree(name, interactive)?;
 
     println!(
         "{} {}/{}",
-        "Closing:".bold(),
+        "Opening:".bold(),
         worktree_state.project_name.blue(),
         worktree_state.name.green()
     );
@@ -23,96 +22,57 @@ pub fn execute(name: Option<String>, force: bool, interactive: bool) -> Result<(
         worktree_state.worktree_dir.display()
     );
 
-    // Confirm unless force flag is set
-    if !force {
-        print!(
-            "\n{} ",
-            "Are you sure you want to close this worktree? (y/N):".yellow()
-        );
-        io::stdout().flush()?;
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        let input = input.trim().to_lowercase();
-
-        if input != "y" && input != "yes" {
-            println!("{}", "Cancelled.".dimmed());
-            return Ok(());
+    // Load settings from the original project directory to get terminal preference
+    let settings = MergedSettings::load_from(&worktree_state.original_dir).unwrap_or_else(|_| {
+        MergedSettings {
+            port_count: 10,
+            port_range_start: 50000,
+            port_range_end: 60000,
+            branch_prefix: "worktree/".to_string(),
+            auto_launch_terminal: true,
+            worktree_dir: None,
+            terminal: None,
         }
-    }
+    });
 
-    println!();
+    // Get terminal from settings or auto-detect
+    let term = settings
+        .terminal
+        .as_ref()
+        .and_then(|t| terminal::Terminal::from_str(t))
+        .or_else(terminal::detect_terminal);
 
-    // Kill tmux session if it exists
-    println!("  Checking for tmux session...");
-    match terminal::kill_tmux_session(&worktree_state.project_name, &worktree_state.name) {
-        Ok(true) => {
-            println!(
-                "  {} Terminated tmux session: {}",
-                "✓".green(),
-                terminal::tmux_session_name(&worktree_state.project_name, &worktree_state.name)
-            );
-        }
-        Ok(false) => {
-            println!("  {} No tmux session found", "·".dimmed());
-        }
-        Err(e) => {
-            println!(
-                "  {} Failed to check/kill tmux session: {}",
-                "⚠".yellow(),
-                e
-            );
-        }
-    }
-
-    // Change to home directory before removing worktree
-    let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"));
-    std::env::set_current_dir(&home)?;
-
-    // Use shared worktree removal logic with verbose output
-    let result = common::remove_worktree(&worktree_state, &RemoveOptions { verbose: true })?;
-
-    // Print detailed results
-    if let Some(success) = result.close_script_success {
-        if success {
-            println!("  {} Close script completed", "✓".green());
+    if let Some(term) = term {
+        println!();
+        println!("  Launching {}...", term.name());
+        let launch_result = if term == terminal::Terminal::Tmux {
+            terminal::launch_tmux_session(
+                &worktree_state.project_name,
+                &worktree_state.name,
+                &worktree_state.worktree_dir,
+            )
         } else {
-            println!("  {} Close script failed (continuing anyway)", "⚠".yellow());
-        }
-    }
+            terminal::launch(&term, &worktree_state.worktree_dir)
+        };
 
-    match result.deallocated_ports {
-        Some(ports) if !ports.is_empty() => {
+        if let Err(e) = launch_result {
+            println!("  {} Failed to launch terminal: {}", "⚠".yellow(), e);
             println!(
-                "  {} Deallocated ports {}-{}",
-                "✓".green(),
-                ports.first().unwrap_or(&0),
-                ports.last().unwrap_or(&0)
+                "  Run manually: {}",
+                terminal::get_manual_command(&worktree_state.worktree_dir).dimmed()
             );
         }
-        Some(_) | None => {
-            println!("  {} No ports were allocated", "⚠".yellow());
-        }
-    }
-
-    if result.worktree_removed {
-        println!("  {} Git worktree removed", "✓".green());
     } else {
-        println!("  {} Failed to remove worktree", "✗".red());
+        println!(
+            "\n  No terminal detected. Run manually:\n  {}",
+            terminal::get_manual_command(&worktree_state.worktree_dir).dimmed()
+        );
     }
-
-    println!();
-    println!("{}", "Worktree closed successfully!".green().bold());
-    println!();
-    println!(
-        "Return to original project:\n  cd {}",
-        worktree_state.original_dir.display()
-    );
 
     Ok(())
 }
 
-/// Resolve which worktree to close based on arguments
+/// Resolve which worktree to open based on arguments
 fn resolve_worktree(name: Option<String>, interactive: bool) -> Result<WorktreeState> {
     // If interactive mode, show selection
     if interactive {
@@ -182,7 +142,7 @@ fn find_all_worktrees() -> Result<Vec<WorktreeState>> {
 
 /// Interactive worktree selection
 fn select_worktree(worktrees: &[WorktreeState]) -> Result<WorktreeState> {
-    println!("\n{}", "Select worktree to close:".bold());
+    println!("\n{}", "Select worktree to open:".bold());
 
     for (i, wt) in worktrees.iter().enumerate() {
         let port_range = if wt.ports.is_empty() {

@@ -22,6 +22,10 @@ pub struct Settings {
 
     #[serde(default = "default_auto_launch_terminal")]
     pub auto_launch_terminal: bool,
+
+    /// Terminal to use (e.g., "tmux", "iterm2", "ghostty"). If not set, auto-detects.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub terminal: Option<String>,
 }
 
 impl Default for Settings {
@@ -32,6 +36,7 @@ impl Default for Settings {
             port_range_end: default_port_range_end(),
             branch_prefix: default_branch_prefix(),
             auto_launch_terminal: default_auto_launch_terminal(),
+            terminal: None,
         }
     }
 }
@@ -69,6 +74,8 @@ pub struct MergedSettings {
     pub branch_prefix: String,
     pub auto_launch_terminal: bool,
     pub worktree_dir: Option<PathBuf>,
+    /// Terminal to use (e.g., "tmux", "iterm2"). If None, auto-detects.
+    pub terminal: Option<String>,
 }
 
 impl MergedSettings {
@@ -102,6 +109,7 @@ impl MergedSettings {
             branch_prefix: settings.branch_prefix,
             auto_launch_terminal: settings.auto_launch_terminal,
             worktree_dir: local_settings.worktree_dir,
+            terminal: settings.terminal,
         })
     }
 

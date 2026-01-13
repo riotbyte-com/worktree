@@ -49,6 +49,16 @@ pub enum Commands {
         interactive: bool,
     },
 
+    /// Open an existing worktree in the configured terminal
+    Open {
+        /// Worktree name to open (optional if inside a worktree)
+        name: Option<String>,
+
+        /// Interactively select worktree to open
+        #[arg(short, long)]
+        interactive: bool,
+    },
+
     /// List all active worktrees
     List {
         /// Output as JSON
