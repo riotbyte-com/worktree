@@ -61,7 +61,7 @@ install() {
     local version="${1:-latest}"
     local asset_name
     local download_url
-    local tmp_dir=""
+    local tmp_dir
     local existing_binary="$INSTALL_DIR/$BINARY_NAME"
 
     info "Installing worktree..."
@@ -79,7 +79,7 @@ install() {
         warn "Location: $existing_binary"
         warn ""
         printf "Do you want to override the existing installation? [y/N]: "
-        read -r response
+        read -r response < /dev/tty
         if [[ ! "$response" =~ ^[Yy]$ ]]; then
             info "Installation cancelled."
             exit 0
@@ -93,7 +93,7 @@ install() {
 
     # Create temp directory
     tmp_dir="$(mktemp -d)"
-    trap '[[ -n "$tmp_dir" ]] && rm -rf "$tmp_dir"' EXIT
+    trap "[[ -n \"$tmp_dir\" ]] && rm -rf \"$tmp_dir\"" EXIT
 
     # Download
     if command -v curl &> /dev/null; then

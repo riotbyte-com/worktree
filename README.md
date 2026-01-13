@@ -18,19 +18,19 @@ A standalone CLI tool for managing isolated git worktrees with automatic port al
 Install the latest version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dbrekelmans/claude-worktree/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/riotbyte-com/worktree/main/install.sh | bash
 ```
 
 Install a specific version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dbrekelmans/claude-worktree/main/install.sh | bash -s v1.0.0
+curl -fsSL https://raw.githubusercontent.com/riotbyte-com/worktree/main/install.sh | bash -s v1.0.0
 ```
 
 The binary is installed to `~/.local/bin` by default. Set `INSTALL_DIR` to customize:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dbrekelmans/claude-worktree/main/install.sh | INSTALL_DIR=/usr/local/bin bash
+curl -fsSL https://raw.githubusercontent.com/riotbyte-com/worktree/main/install.sh | INSTALL_DIR=/usr/local/bin bash
 ```
 
 ### From Source
