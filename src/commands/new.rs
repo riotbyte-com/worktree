@@ -145,8 +145,10 @@ pub fn execute(param: Option<String>) -> Result<()> {
 
         if let Some(term) = term {
             println!("  Launching {}...", term.name());
+            // Use effective name (display name if set, otherwise directory name) for tmux session
+            let effective_name = state.effective_name();
             let launch_result = if term == terminal::Terminal::Tmux {
-                terminal::launch_tmux_session(&project_name, &worktree_name, &worktree_dir)
+                terminal::launch_tmux_session(&project_name, effective_name, &worktree_dir)
             } else {
                 terminal::launch(&term, &worktree_dir)
             };

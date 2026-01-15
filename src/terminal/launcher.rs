@@ -239,6 +239,39 @@ pub fn kill_tmux_session(project_name: &str, worktree_name: &str) -> Result<bool
     Ok(false)
 }
 
+/// Check if a tmux session exists
+pub fn tmux_session_exists(session_name: &str) -> bool {
+    Command::new("tmux")
+        .args(["has-session", "-t", session_name])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// Rename a tmux session
+pub fn rename_tmux_session(old_name: &str, new_name: &str) -> Result<bool> {
+    // Check if old session exists
+    if !tmux_session_exists(old_name) {
+        return Ok(false);
+    }
+
+    // Check if new name already exists (would cause conflict)
+    if tmux_session_exists(new_name) {
+        anyhow::bail!(
+            "Cannot rename tmux session: session '{}' already exists",
+            new_name
+        );
+    }
+
+    // Rename the session
+    let result = Command::new("tmux")
+        .args(["rename-session", "-t", old_name, new_name])
+        .output()
+        .context("Failed to rename tmux session")?;
+
+    Ok(result.status.success())
+}
+
 fn launch_apple_terminal(dir: &str) -> Result<()> {
     let escaped_dir = shell_escape(dir);
     let script = format!(

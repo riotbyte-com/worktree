@@ -5,6 +5,7 @@ use walkdir::WalkDir;
 
 use crate::config::{paths, state::WorktreeState};
 use crate::git;
+use crate::terminal;
 
 pub fn execute(worktree: Option<String>, new_name: Option<String>, clear: bool) -> Result<()> {
     // Resolve which worktree to rename
@@ -42,6 +43,9 @@ pub fn execute(worktree: Option<String>, new_name: Option<String>, clear: bool) 
     );
     println!("  {} {}", "Directory:".dimmed(), state.name.dimmed());
 
+    // Rename tmux session if it exists
+    rename_tmux_session_if_exists(&state.project_name, &old_name, &new_name, &state.name)?;
+
     Ok(())
 }
 
@@ -57,6 +61,7 @@ fn clear_display_name(state: &mut WorktreeState) -> Result<()> {
     }
 
     let old_name = state.effective_name().to_string();
+    let new_name = state.name.clone();
     state.display_name = None;
     state.save()?;
 
@@ -66,6 +71,9 @@ fn clear_display_name(state: &mut WorktreeState) -> Result<()> {
         old_name.yellow(),
         state.name.green()
     );
+
+    // Rename tmux session if it exists
+    rename_tmux_session_if_exists(&state.project_name, &old_name, &new_name, &state.name)?;
 
     Ok(())
 }
@@ -278,4 +286,56 @@ fn select_worktree(worktrees: &[WorktreeState]) -> Result<WorktreeState> {
     }
 
     Ok(worktrees[idx - 1].clone())
+}
+
+/// Rename the tmux session if it exists
+/// Tries to find session by old_effective_name first, then falls back to directory_name
+fn rename_tmux_session_if_exists(
+    project_name: &str,
+    old_effective_name: &str,
+    new_effective_name: &str,
+    directory_name: &str,
+) -> Result<()> {
+    let old_session_name = terminal::tmux_session_name(project_name, old_effective_name);
+    let new_session_name = terminal::tmux_session_name(project_name, new_effective_name);
+
+    // Try to rename session with old effective name
+    if terminal::tmux_session_exists(&old_session_name) {
+        match terminal::rename_tmux_session(&old_session_name, &new_session_name) {
+            Ok(true) => {
+                println!(
+                    "  {} Renamed tmux session to '{}'",
+                    "✓".green(),
+                    new_session_name
+                );
+            }
+            Ok(false) => {}
+            Err(e) => {
+                println!("  {} Failed to rename tmux session: {}", "⚠".yellow(), e);
+            }
+        }
+        return Ok(());
+    }
+
+    // Fall back to directory name (for sessions created before display name support)
+    if old_effective_name != directory_name {
+        let fallback_session_name = terminal::tmux_session_name(project_name, directory_name);
+        if terminal::tmux_session_exists(&fallback_session_name) {
+            match terminal::rename_tmux_session(&fallback_session_name, &new_session_name) {
+                Ok(true) => {
+                    println!(
+                        "  {} Renamed tmux session to '{}'",
+                        "✓".green(),
+                        new_session_name
+                    );
+                }
+                Ok(false) => {}
+                Err(e) => {
+                    println!("  {} Failed to rename tmux session: {}", "⚠".yellow(), e);
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
