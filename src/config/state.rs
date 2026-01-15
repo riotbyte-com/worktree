@@ -18,6 +18,10 @@ pub struct WorktreeState {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub param: Option<String>,
+
+    /// Custom display name (optional, defaults to directory name)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub display_name: Option<String>,
 }
 
 impl WorktreeState {
@@ -30,6 +34,7 @@ impl WorktreeState {
         branch: String,
         ports: Vec<u16>,
         param: Option<String>,
+        display_name: Option<String>,
     ) -> Self {
         let allocation_key = format!("{}/{}", project_name, name);
         Self {
@@ -42,7 +47,26 @@ impl WorktreeState {
             allocation_key,
             created_at: Utc::now(),
             param,
+            display_name,
         }
+    }
+
+    /// Get the effective display name (custom name or directory name)
+    pub fn effective_name(&self) -> &str {
+        self.display_name.as_deref().unwrap_or(&self.name)
+    }
+
+    /// Check if the worktree has a custom display name
+    pub fn has_custom_name(&self) -> bool {
+        self.display_name.is_some()
+    }
+
+    /// Check if a given identifier matches this worktree
+    /// Matches against: directory name, display name, or allocation_key suffix
+    pub fn matches_identifier(&self, identifier: &str) -> bool {
+        self.name == identifier
+            || self.display_name.as_deref() == Some(identifier)
+            || self.allocation_key.ends_with(&format!("/{}", identifier))
     }
 
     /// Save state to the worktree directory

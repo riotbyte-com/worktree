@@ -57,11 +57,17 @@ pub fn execute(older_than: Option<u32>, force: bool) -> Result<()> {
         );
         for idx in &selected {
             let wt = &worktrees[*idx];
-            println!(
-                "  • {}/{}",
-                wt.state.project_name.blue(),
-                wt.state.name.green()
-            );
+            // Show display name with directory if custom name is set
+            let name_display = if wt.state.has_custom_name() {
+                format!(
+                    "{} - {}",
+                    wt.state.effective_name().green(),
+                    wt.state.name.dimmed()
+                )
+            } else {
+                wt.state.name.green().to_string()
+            };
+            println!("  • {}/{}", wt.state.project_name.blue(), name_display);
         }
 
         print!("\n{} ", "Proceed? (y/N):".yellow());
@@ -159,11 +165,18 @@ fn display_worktrees(worktrees: &[WorktreeInfo]) {
             inactive_str.normal()
         };
 
+        // Show display name with directory if custom name is set
+        let name_str = if wt.state.has_custom_name() {
+            format!("{} ({})", wt.state.effective_name(), wt.state.name)
+        } else {
+            wt.state.name.clone()
+        };
+
         println!(
             "  {:>3}  {:20} {:25} {:>12} {:>12}",
             (i + 1).to_string().cyan(),
             truncate(&wt.state.project_name, 20).blue(),
-            truncate(&wt.state.name, 25).green(),
+            truncate(&name_str, 25).green(),
             last_commit_str.dimmed(),
             inactive_colored
         );
@@ -260,10 +273,20 @@ fn prompt_selection(worktrees: &[WorktreeInfo]) -> Result<Vec<usize>> {
 }
 
 fn delete_worktree(state: &WorktreeState) -> Result<()> {
+    // Show display name with directory if custom name is set
+    let name_display = if state.has_custom_name() {
+        format!(
+            "{} - {}",
+            state.effective_name().green(),
+            state.name.dimmed()
+        )
+    } else {
+        state.name.green().to_string()
+    };
     println!(
         "  Deleting {}/{}...",
         state.project_name.blue(),
-        state.name.green()
+        name_display
     );
 
     let result = common::remove_worktree(state, &RemoveOptions::default())?;

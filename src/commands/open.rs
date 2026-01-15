@@ -10,11 +10,22 @@ pub fn execute(name: Option<String>, interactive: bool) -> Result<()> {
     // Determine which worktree to open
     let worktree_state = resolve_worktree(name, interactive)?;
 
+    // Show display name with directory if custom name is set
+    let name_display = if worktree_state.has_custom_name() {
+        format!(
+            "{} - {}",
+            worktree_state.effective_name().green(),
+            worktree_state.name.dimmed()
+        )
+    } else {
+        worktree_state.name.green().to_string()
+    };
+
     println!(
         "{} {}/{}",
         "Opening:".bold(),
         worktree_state.project_name.blue(),
-        worktree_state.name.green()
+        name_display
     );
     println!(
         "  {} {}",
@@ -88,7 +99,7 @@ fn resolve_worktree(name: Option<String>, interactive: bool) -> Result<WorktreeS
         let worktrees = find_all_worktrees()?;
         let matches: Vec<_> = worktrees
             .into_iter()
-            .filter(|wt| wt.name == name || wt.allocation_key.ends_with(&format!("/{}", name)))
+            .filter(|wt| wt.matches_identifier(&name))
             .collect();
 
         match matches.len() {
@@ -151,11 +162,18 @@ fn select_worktree(worktrees: &[WorktreeState]) -> Result<WorktreeState> {
             format!("{}-{}", wt.ports.first().unwrap(), wt.ports.last().unwrap())
         };
 
+        // Show display name with directory if custom name is set
+        let name_display = if wt.has_custom_name() {
+            format!("{} - {}", wt.effective_name().green(), wt.name.dimmed())
+        } else {
+            wt.name.green().to_string()
+        };
+
         println!(
             "  {}) {}/{} {} {}",
             (i + 1).to_string().cyan(),
             wt.project_name.blue(),
-            wt.name.green(),
+            name_display,
             format!("(ports {})", port_range).dimmed(),
             format!("[{}]", wt.branch).dimmed()
         );

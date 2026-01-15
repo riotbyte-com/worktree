@@ -94,9 +94,16 @@ fn display_table(worktrees: &[WorktreeState]) {
                     )
                 };
 
+                // Show display name with directory if custom name is set
+                let name_display = if wt.has_custom_name() {
+                    format!("{} - {}", wt.effective_name().green(), wt.name.dimmed())
+                } else {
+                    wt.name.green().to_string()
+                };
+
                 println!(
                     "  {} {} {}",
-                    wt.name.green(),
+                    name_display,
                     format!("({})", port_range).dimmed(),
                     format!("[{}]", wt.branch).cyan()
                 );

@@ -168,6 +168,92 @@ install() {
 
     info ""
     info "Installation complete! Run 'worktree --help' to get started."
+
+    # Offer to install shell completions
+    setup_completions
+}
+
+# Detect user's shell
+detect_shell() {
+    local shell_name
+    shell_name="$(basename "$SHELL")"
+    case "$shell_name" in
+        bash|zsh|fish) echo "$shell_name" ;;
+        *) echo "" ;;
+    esac
+}
+
+# Get completion file path for a shell
+get_completion_path() {
+    local shell="$1"
+    case "$shell" in
+        bash)
+            # Use user-local bash completion directory
+            echo "${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion/completions/worktree"
+            ;;
+        zsh)
+            # Use user-local zsh completions directory
+            echo "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions/_worktree"
+            ;;
+        fish)
+            # Fish uses ~/.config/fish/completions
+            echo "${XDG_CONFIG_HOME:-$HOME/.config}/fish/completions/worktree.fish"
+            ;;
+    esac
+}
+
+# Setup shell completions
+setup_completions() {
+    local detected_shell
+    detected_shell="$(detect_shell)"
+
+    if [[ -z "$detected_shell" ]]; then
+        info ""
+        info "Shell completions are available. Generate them with:"
+        info "  worktree completions bash|zsh|fish"
+        return
+    fi
+
+    info ""
+    printf "Would you like to install shell completions for ${detected_shell}? [y/N]: "
+    read -r response < /dev/tty
+    if [[ ! "$response" =~ ^[Yy]$ ]]; then
+        info "Skipping completions. You can install them later with:"
+        info "  worktree completions $detected_shell"
+        return
+    fi
+
+    local completion_path
+    completion_path="$(get_completion_path "$detected_shell")"
+    local completion_dir
+    completion_dir="$(dirname "$completion_path")"
+
+    # Create directory if needed
+    mkdir -p "$completion_dir"
+
+    # Generate completions
+    "$INSTALL_DIR/$BINARY_NAME" completions "$detected_shell" > "$completion_path"
+    info "Completions installed to: $completion_path"
+
+    # Provide shell-specific instructions
+    case "$detected_shell" in
+        bash)
+            info ""
+            info "For bash completions to work, ensure bash-completion is installed and sourced."
+            info "Add this to your ~/.bashrc if completions don't work:"
+            info "  source ${completion_path}"
+            ;;
+        zsh)
+            info ""
+            info "For zsh completions to work, add the completions directory to your fpath."
+            info "Add this to your ~/.zshrc (before compinit):"
+            info "  fpath=(${completion_dir} \$fpath)"
+            info "  autoload -Uz compinit && compinit"
+            ;;
+        fish)
+            info "Fish completions are automatically loaded from this location."
+            ;;
+    esac
 }
 
 # Parse arguments

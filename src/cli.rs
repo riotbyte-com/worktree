@@ -59,6 +59,19 @@ pub enum Commands {
         interactive: bool,
     },
 
+    /// Rename a worktree's display name
+    Rename {
+        /// Worktree to rename (name or directory). If omitted, uses current worktree or prompts.
+        worktree: Option<String>,
+
+        /// New display name for the worktree. If omitted, prompts for input.
+        new_name: Option<String>,
+
+        /// Clear custom name and revert to directory name
+        #[arg(long)]
+        clear: bool,
+    },
+
     /// List all active worktrees
     List {
         /// Output as JSON

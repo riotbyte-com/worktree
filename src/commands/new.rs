@@ -67,7 +67,17 @@ pub fn execute(param: Option<String>) -> Result<()> {
             .with_context(|| format!("Failed to create directory {}", parent.display()))?;
     }
 
-    println!("{} {}", "Creating worktree:".bold(), worktree_name.green());
+    // Show display name if provided, with directory name
+    let name_display = if param.is_some() {
+        format!(
+            "{} - {}",
+            param.as_ref().unwrap().green(),
+            worktree_name.dimmed()
+        )
+    } else {
+        worktree_name.green().to_string()
+    };
+    println!("{} {}", "Creating worktree:".bold(), name_display);
     println!("  {} {}", "Branch:".dimmed(), branch.cyan());
     println!("  {} {}", "Path:".dimmed(), worktree_dir.display());
 
@@ -98,6 +108,8 @@ pub fn execute(param: Option<String>) -> Result<()> {
     }
 
     // Create state
+    // When param is provided, use it as the display name
+    let display_name = param.clone();
     let state = WorktreeState::new(
         worktree_name.clone(),
         project_name.clone(),
@@ -106,6 +118,7 @@ pub fn execute(param: Option<String>) -> Result<()> {
         branch.clone(),
         allocation.ports.clone(),
         param.clone(),
+        display_name,
     );
 
     // Save state to worktree
@@ -161,7 +174,17 @@ pub fn execute(param: Option<String>) -> Result<()> {
     println!();
     println!("{}", "Worktree created successfully!".green().bold());
     println!();
-    println!("  {} {}", "Name:".dimmed(), worktree_name.green());
+    // Show display name if set, with directory name
+    let summary_name = if state.has_custom_name() {
+        format!(
+            "{} - {}",
+            state.effective_name().green(),
+            state.name.dimmed()
+        )
+    } else {
+        state.name.green().to_string()
+    };
+    println!("  {} {}", "Name:".dimmed(), summary_name);
     println!("  {} {}", "Path:".dimmed(), worktree_dir.display());
     println!("  {} {}", "Branch:".dimmed(), branch.cyan());
     println!(

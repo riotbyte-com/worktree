@@ -10,6 +10,10 @@ pub fn build_env_vars(state: &WorktreeState) -> HashMap<String, String> {
     let mut env = HashMap::new();
 
     env.insert("WORKTREE_NAME".to_string(), state.name.clone());
+    env.insert(
+        "WORKTREE_DISPLAY_NAME".to_string(),
+        state.effective_name().to_string(),
+    );
     env.insert("WORKTREE_PROJECT".to_string(), state.project_name.clone());
     env.insert(
         "WORKTREE_DIR".to_string(),
