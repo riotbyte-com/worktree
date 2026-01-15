@@ -72,11 +72,15 @@ pub enum Commands {
         clear: bool,
     },
 
-    /// List all active worktrees
+    /// List active worktrees (current project by default)
     List {
         /// Output as JSON
         #[arg(long)]
         json: bool,
+
+        /// Show worktrees from all projects
+        #[arg(short, long)]
+        all: bool,
     },
 
     /// Clean up inactive worktrees
@@ -88,6 +92,10 @@ pub enum Commands {
         /// Force cleanup without confirmation
         #[arg(short, long)]
         force: bool,
+
+        /// Show worktrees from all projects
+        #[arg(short, long)]
+        all: bool,
     },
 
     /// Generate shell completion scripts

@@ -4,9 +4,10 @@ use std::collections::HashMap;
 use walkdir::WalkDir;
 
 use crate::config::{paths, state::WorktreeState};
+use crate::git;
 use crate::ports::PortAllocations;
 
-pub fn execute(json: bool) -> Result<()> {
+pub fn execute(json: bool, all: bool) -> Result<()> {
     // Clean up stale allocations
     let mut allocations = PortAllocations::load()?;
     let stale = allocations.cleanup_stale();
@@ -15,11 +16,23 @@ pub fn execute(json: bool) -> Result<()> {
     }
 
     // Find all worktrees
-    let worktrees = find_all_worktrees()?;
+    let mut worktrees = find_all_worktrees()?;
+
+    // Filter by current project unless --all is specified
+    let current_project = if !all { get_current_project() } else { None };
+
+    if let Some(ref project) = current_project {
+        worktrees.retain(|wt| &wt.project_name == project);
+    }
 
     if worktrees.is_empty() {
         if json {
             println!("[]");
+        } else if current_project.is_some() {
+            println!(
+                "{}",
+                "No worktrees found for this project. Use --all to see all worktrees.".dimmed()
+            );
         } else {
             println!("{}", "No active worktrees found.".dimmed());
         }
@@ -29,10 +42,27 @@ pub fn execute(json: bool) -> Result<()> {
     if json {
         display_json(&worktrees)?;
     } else {
-        display_table(&worktrees);
+        display_table(&worktrees, current_project.is_some());
     }
 
     Ok(())
+}
+
+/// Try to get the current project name from the git repo or worktree state
+fn get_current_project() -> Option<String> {
+    // First check if we're inside a worktree
+    if let Ok(Some(state)) = crate::config::state::detect_worktree() {
+        return Some(state.project_name);
+    }
+
+    // Otherwise try to get the project name from git
+    if git::is_git_repo() {
+        if let Ok(name) = git::get_main_project_name() {
+            return Some(name);
+        }
+    }
+
+    None
 }
 
 fn find_all_worktrees() -> Result<Vec<WorktreeState>> {
@@ -63,7 +93,7 @@ fn find_all_worktrees() -> Result<Vec<WorktreeState>> {
     Ok(worktrees)
 }
 
-fn display_table(worktrees: &[WorktreeState]) {
+fn display_table(worktrees: &[WorktreeState], filtered_by_project: bool) {
     // Group by project
     let mut by_project: HashMap<String, Vec<&WorktreeState>> = HashMap::new();
     for wt in worktrees {
@@ -117,19 +147,31 @@ fn display_table(worktrees: &[WorktreeState]) {
     }
 
     // Summary
-    let project_count = by_project.len();
     let worktree_count = worktrees.len();
-    println!(
-        "\n{}",
-        format!(
-            "Total: {} worktree{} across {} project{}",
-            worktree_count,
-            if worktree_count == 1 { "" } else { "s" },
-            project_count,
-            if project_count == 1 { "" } else { "s" }
-        )
-        .dimmed()
-    );
+    if filtered_by_project {
+        println!(
+            "\n{}",
+            format!(
+                "Total: {} worktree{}. Use --all to see all projects.",
+                worktree_count,
+                if worktree_count == 1 { "" } else { "s" }
+            )
+            .dimmed()
+        );
+    } else {
+        let project_count = by_project.len();
+        println!(
+            "\n{}",
+            format!(
+                "Total: {} worktree{} across {} project{}",
+                worktree_count,
+                if worktree_count == 1 { "" } else { "s" },
+                project_count,
+                if project_count == 1 { "" } else { "s" }
+            )
+            .dimmed()
+        );
+    }
 }
 
 fn display_json(worktrees: &[WorktreeState]) -> Result<()> {

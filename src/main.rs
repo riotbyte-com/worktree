@@ -42,10 +42,12 @@ fn main() -> Result<()> {
             new_name,
             clear,
         }) => commands::rename::execute(worktree, new_name, clear),
-        Some(Commands::List { json }) => commands::list::execute(json),
-        Some(Commands::Cleanup { older_than, force }) => {
-            commands::cleanup::execute(older_than, force)
-        }
+        Some(Commands::List { json, all }) => commands::list::execute(json, all),
+        Some(Commands::Cleanup {
+            older_than,
+            force,
+            all,
+        }) => commands::cleanup::execute(older_than, force, all),
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "worktree", &mut std::io::stdout());

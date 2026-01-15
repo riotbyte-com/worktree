@@ -109,17 +109,17 @@ pub fn execute(param: Option<String>) -> Result<()> {
 
     // Create state
     // When param is provided, use it as the display name
-    let display_name = param.clone();
-    let state = WorktreeState::new(
+    let state = WorktreeState::builder(
         worktree_name.clone(),
         project_name.clone(),
-        repo_root.clone(),
         worktree_dir.clone(),
-        branch.clone(),
-        allocation.ports.clone(),
-        param.clone(),
-        display_name,
-    );
+    )
+    .original_dir(repo_root.clone())
+    .branch(branch.clone())
+    .ports(allocation.ports.clone())
+    .param(param.clone())
+    .display_name(param.clone())
+    .build();
 
     // Save state to worktree
     state.save()?;
