@@ -110,16 +110,59 @@ This deallocates ports and removes the git worktree.
 
 ## Configuration
 
-### Settings (`settings.json`)
+Worktree uses a layered configuration system with three levels:
+
+1. **User settings** (`~/.config/worktree/config.json`) - Personal preferences that apply across all projects
+2. **Project settings** (`.worktree/settings.json`) - Team-shared settings committed to the repository
+3. **Project local settings** (`.worktree/settings.local.json`) - Personal project-specific overrides (gitignored)
+
+Settings are merged with project settings taking precedence over user settings.
+
+### Configuration Locations
+
+```
+~/.config/worktree/
+└── config.json              # User preferences (terminal, auto-launch)
+
+~/.worktree/
+├── worktrees/               # Default worktree storage location
+│   └── <project>/
+│       └── <worktree>/
+└── port-allocations.json    # Global port tracking
+
+<project>/.worktree/
+├── settings.json            # Team settings (commit to repo)
+├── settings.local.json      # Personal overrides (gitignored)
+├── setup.sh, run.sh, ...    # Lifecycle scripts
+└── README.md, SETUP.md      # Documentation
+```
+
+### User Settings (`~/.config/worktree/config.json`)
+
+Personal preferences that apply to all projects. Created automatically on first run.
+
+```json
+{
+  "autoLaunchTerminal": true,
+  "terminal": "iterm2"
+}
+```
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `autoLaunchTerminal` | Automatically open terminal on worktree creation | `true` |
+| `terminal` | Preferred terminal emulator (see below) | Auto-detect |
+
+### Project Settings (`.worktree/settings.json`)
+
+Team-shared settings committed to the repository.
 
 ```json
 {
   "portCount": 10,
   "portRangeStart": 50000,
   "portRangeEnd": 60000,
-  "branchPrefix": "worktree/",
-  "autoLaunchTerminal": true,
-  "terminal": "iterm2"
+  "branchPrefix": "worktree/"
 }
 ```
 
@@ -129,8 +172,22 @@ This deallocates ports and removes the git worktree.
 | `portRangeStart` | Start of port allocation range | `50000` |
 | `portRangeEnd` | End of port allocation range | `60000` |
 | `branchPrefix` | Prefix for worktree branch names | `worktree/` |
-| `autoLaunchTerminal` | Automatically open terminal on worktree creation | `true` |
-| `terminal` | Terminal emulator to use (see below) | Auto-detect |
+| `autoLaunchTerminal` | Override user's auto-launch setting for this project | (uses user setting) |
+| `terminal` | Override user's terminal for this project | (uses user setting) |
+
+### Project Local Settings (`.worktree/settings.local.json`)
+
+Personal project-specific settings (gitignored).
+
+```json
+{
+  "worktreeDir": "/custom/path/to/worktrees"
+}
+```
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `worktreeDir` | Custom directory for this project's worktrees | `~/.worktree/worktrees/<project>/` |
 
 ### Terminal Options
 
@@ -159,14 +216,6 @@ When `terminal` is not set, the tool auto-detects your terminal. You can explici
 | `kitty` | Kitty |
 | `alacritty` | Alacritty |
 
-### Local Settings (`settings.local.json`)
-
-```json
-{
-  "worktreeDir": "/custom/path/to/worktrees"
-}
-```
-
 ## Environment Variables
 
 Lifecycle scripts receive these environment variables:
@@ -183,6 +232,9 @@ Lifecycle scripts receive these environment variables:
 ## Directory Structure
 
 ```
+~/.config/worktree/
+└── config.json                  # User preferences
+
 ~/.worktree/
 ├── worktrees/
 │   └── my-project/
@@ -194,8 +246,8 @@ Lifecycle scripts receive these environment variables:
 
 your-project/
 └── .worktree/
-    ├── settings.json
-    ├── settings.local.json
+    ├── settings.json            # Team settings
+    ├── settings.local.json      # Personal overrides
     ├── setup.sh
     ├── run.sh
     ├── stop.sh

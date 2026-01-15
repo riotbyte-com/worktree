@@ -96,7 +96,7 @@ pub fn execute(defaults: bool, no_scripts: bool) -> Result<()> {
 fn prompt_settings() -> Result<Settings> {
     let mut settings = Settings::default();
 
-    println!("Configure worktree settings (press Enter for defaults):");
+    println!("Configure project worktree settings (press Enter for defaults):");
     println!();
 
     // Port count
@@ -137,23 +137,6 @@ fn prompt_settings() -> Result<Settings> {
     let input = read_line()?;
     if !input.is_empty() {
         settings.branch_prefix = input;
-    }
-
-    // Auto launch terminal
-    print!(
-        "  Auto-launch terminal (y/n) [{}]: ",
-        if settings.auto_launch_terminal {
-            "y"
-        } else {
-            "n"
-        }
-        .to_string()
-        .dimmed()
-    );
-    io::stdout().flush()?;
-    let input = read_line()?.to_lowercase();
-    if !input.is_empty() {
-        settings.auto_launch_terminal = input == "y" || input == "yes";
     }
 
     println!();

@@ -90,6 +90,7 @@ pub fn detect_terminal() -> Option<Terminal> {
             "WarpTerminal" => return Some(Terminal::Warp),
             "ghostty" => return Some(Terminal::Ghostty),
             "vscode" => return Some(Terminal::VSCode),
+            "tmux" => return Some(Terminal::Tmux),
             _ => {}
         }
     }

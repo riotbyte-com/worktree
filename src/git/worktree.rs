@@ -12,7 +12,7 @@ pub fn is_git_repo() -> bool {
         .unwrap_or(false)
 }
 
-/// Get the root directory of the current git repository
+/// Get the root directory of the current git repository (or worktree)
 pub fn get_repo_root() -> Result<PathBuf> {
     let output = Command::new("git")
         .args(["rev-parse", "--show-toplevel"])
@@ -31,9 +31,40 @@ pub fn get_repo_root() -> Result<PathBuf> {
     Ok(PathBuf::from(path))
 }
 
-/// Get the project name from the git repository root directory name
-pub fn get_project_name() -> Result<String> {
-    let root = get_repo_root()?;
+/// Get the root directory of the main repository (not a worktree).
+/// If currently in a worktree, this returns the main repository root.
+/// If in the main repository, returns that root.
+pub fn get_main_repo_root() -> Result<PathBuf> {
+    // git worktree list outputs lines like:
+    // /path/to/main/repo  abc1234 [main]
+    // /path/to/worktree   def5678 [feature-branch]
+    // The first entry is always the main working tree
+    let output = Command::new("git")
+        .args(["worktree", "list", "--porcelain"])
+        .output()
+        .context("Failed to execute git worktree list")?;
+
+    if !output.status.success() {
+        // Fallback to regular repo root if worktree list fails
+        return get_repo_root();
+    }
+
+    let stdout = String::from_utf8(output.stdout).context("Invalid UTF-8 in git output")?;
+
+    // Porcelain format: first line starts with "worktree " followed by path
+    for line in stdout.lines() {
+        if let Some(path) = line.strip_prefix("worktree ") {
+            return Ok(PathBuf::from(path));
+        }
+    }
+
+    // Fallback if parsing fails
+    get_repo_root()
+}
+
+/// Get the project name from the main repository root directory name
+pub fn get_main_project_name() -> Result<String> {
+    let root = get_main_repo_root()?;
     let name = root
         .file_name()
         .and_then(|n| n.to_str())

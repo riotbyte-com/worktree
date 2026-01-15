@@ -1,6 +1,26 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
 
+/// Returns the user config directory (~/.config/worktree/)
+pub fn user_config_dir() -> Result<PathBuf> {
+    dirs::home_dir()
+        .context(
+            "Could not determine home directory. Please ensure HOME environment variable is set.",
+        )
+        .map(|p| p.join(".config").join("worktree"))
+}
+
+/// Returns the user config file path (~/.config/worktree/config.json)
+pub fn user_config_file() -> Result<PathBuf> {
+    Ok(user_config_dir()?.join("config.json"))
+}
+
+/// Ensures the user config directory exists
+pub fn ensure_user_config_dir() -> Result<()> {
+    std::fs::create_dir_all(user_config_dir()?)?;
+    Ok(())
+}
+
 /// Returns the global worktree directory (~/.worktree/)
 pub fn global_dir() -> Result<PathBuf> {
     dirs::home_dir()

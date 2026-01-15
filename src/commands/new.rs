@@ -15,8 +15,10 @@ pub fn execute(param: Option<String>) -> Result<()> {
         bail!("Not in a git repository. Please run this command from within a git repository.");
     }
 
-    let repo_root = git::get_repo_root()?;
-    let project_name = git::get_project_name()?;
+    // Use main repo root to ensure worktrees are created from the main project,
+    // even when running from within an existing worktree
+    let repo_root = git::get_main_repo_root()?;
+    let project_name = git::get_main_project_name()?;
 
     // Check if project is initialized
     let config_dir = paths::project_config_dir_in(&repo_root);

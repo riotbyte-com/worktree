@@ -10,9 +10,18 @@ mod terminal;
 use anyhow::Result;
 use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};
+use config::settings::UserSettings;
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Ensure user configuration exists for all commands except completions and help
+    // This prompts for first-time setup if ~/.config/worktree/config.json doesn't exist
+    if let Some(ref cmd) = cli.command {
+        if !matches!(cmd, Commands::Completions { .. }) {
+            UserSettings::ensure_configured()?;
+        }
+    }
 
     match cli.command {
         Some(Commands::Init {
