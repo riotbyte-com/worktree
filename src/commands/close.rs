@@ -55,27 +55,14 @@ pub fn execute(name: Option<String>, force: bool, interactive: bool) -> Result<(
 
     println!();
 
-    // Kill tmux session if it exists
+    // Kill tmux session if it exists (try effective name first, then directory name)
     println!("  Checking for tmux session...");
-    match terminal::kill_tmux_session(&worktree_state.project_name, &worktree_state.name) {
-        Ok(true) => {
-            println!(
-                "  {} Terminated tmux session: {}",
-                "✓".green(),
-                terminal::tmux_session_name(&worktree_state.project_name, &worktree_state.name)
-            );
-        }
-        Ok(false) => {
-            println!("  {} No tmux session found", "·".dimmed());
-        }
-        Err(e) => {
-            println!(
-                "  {} Failed to check/kill tmux session: {}",
-                "⚠".yellow(),
-                e
-            );
-        }
-    }
+    let effective_name = worktree_state.effective_name();
+    kill_tmux_session_by_name(
+        &worktree_state.project_name,
+        effective_name,
+        &worktree_state.name,
+    );
 
     // Change to home directory before removing worktree
     let home = dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"));
@@ -284,4 +271,51 @@ fn select_worktree(worktrees: &[WorktreeState]) -> Result<WorktreeState> {
     }
 
     Ok(worktrees[idx - 1].clone())
+}
+
+/// Kill tmux session by trying effective name first, then falling back to directory name
+fn kill_tmux_session_by_name(project_name: &str, effective_name: &str, directory_name: &str) {
+    // Try to kill session with effective name first
+    let effective_session = terminal::tmux_session_name(project_name, effective_name);
+    if terminal::tmux_session_exists(&effective_session) {
+        match terminal::kill_tmux_session(project_name, effective_name) {
+            Ok(true) => {
+                println!(
+                    "  {} Terminated tmux session: {}",
+                    "✓".green(),
+                    effective_session
+                );
+                return;
+            }
+            Ok(false) => {}
+            Err(e) => {
+                println!("  {} Failed to kill tmux session: {}", "⚠".yellow(), e);
+                return;
+            }
+        }
+    }
+
+    // Fall back to directory name (for sessions created before display name support)
+    if effective_name != directory_name {
+        let directory_session = terminal::tmux_session_name(project_name, directory_name);
+        if terminal::tmux_session_exists(&directory_session) {
+            match terminal::kill_tmux_session(project_name, directory_name) {
+                Ok(true) => {
+                    println!(
+                        "  {} Terminated tmux session: {}",
+                        "✓".green(),
+                        directory_session
+                    );
+                    return;
+                }
+                Ok(false) => {}
+                Err(e) => {
+                    println!("  {} Failed to kill tmux session: {}", "⚠".yellow(), e);
+                    return;
+                }
+            }
+        }
+    }
+
+    println!("  {} No tmux session found", "·".dimmed());
 }
