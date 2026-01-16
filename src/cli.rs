@@ -1,5 +1,8 @@
 use clap::{Parser, Subcommand};
+use clap_complete::engine::ArgValueCandidates;
 use clap_complete::Shell;
+
+use crate::completions::worktree_names;
 
 #[derive(Parser)]
 #[command(name = "worktree")]
@@ -38,6 +41,7 @@ pub enum Commands {
     /// Clean up and delete a worktree
     Close {
         /// Worktree name to close (optional if inside a worktree)
+        #[arg(add = ArgValueCandidates::new(worktree_names))]
         name: Option<String>,
 
         /// Force close without confirmation
@@ -52,6 +56,7 @@ pub enum Commands {
     /// Open an existing worktree in the configured terminal
     Open {
         /// Worktree name to open (optional if inside a worktree)
+        #[arg(add = ArgValueCandidates::new(worktree_names))]
         name: Option<String>,
 
         /// Interactively select worktree to open
@@ -62,6 +67,7 @@ pub enum Commands {
     /// Rename a worktree's display name
     Rename {
         /// Worktree to rename (name or directory). If omitted, uses current worktree or prompts.
+        #[arg(add = ArgValueCandidates::new(worktree_names))]
         worktree: Option<String>,
 
         /// New display name for the worktree. If omitted, prompts for input.
@@ -101,6 +107,7 @@ pub enum Commands {
     /// Show information about a worktree
     Status {
         /// Worktree name to show status for (optional, defaults to current worktree)
+        #[arg(add = ArgValueCandidates::new(worktree_names))]
         name: Option<String>,
     },
 

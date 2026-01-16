@@ -1,5 +1,6 @@
 mod cli;
 mod commands;
+mod completions;
 mod config;
 mod git;
 mod names;
@@ -9,10 +10,14 @@ mod terminal;
 
 use anyhow::Result;
 use clap::{CommandFactory, Parser};
+use clap_complete::CompleteEnv;
 use cli::{Cli, Commands};
 use config::settings::UserSettings;
 
 fn main() -> Result<()> {
+    // Handle dynamic shell completions when COMPLETE env var is set
+    CompleteEnv::with_factory(Cli::command).complete();
+
     let cli = Cli::parse();
 
     // Ensure user configuration exists for all commands except completions and help
