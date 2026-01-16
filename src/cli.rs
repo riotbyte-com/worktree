@@ -98,6 +98,12 @@ pub enum Commands {
         all: bool,
     },
 
+    /// Show information about a worktree
+    Status {
+        /// Worktree name to show status for (optional, defaults to current worktree)
+        name: Option<String>,
+    },
+
     /// Generate shell completion scripts
     Completions {
         /// Shell to generate completions for

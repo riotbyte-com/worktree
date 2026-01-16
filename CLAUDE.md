@@ -84,6 +84,7 @@ src/
 
 ## Development Notes
 
+- Issue tracking: https://linear.app/riotbyte/team/TREE
 - Uses `clap` for CLI parsing with derive macros
 - Uses `serde` for JSON serialization
 - Uses `anyhow` for error handling

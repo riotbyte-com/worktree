@@ -7,4 +7,5 @@ pub mod new;
 pub mod open;
 pub mod rename;
 pub mod run;
+pub mod status;
 pub mod stop;

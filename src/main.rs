@@ -48,6 +48,7 @@ fn main() -> Result<()> {
             force,
             all,
         }) => commands::cleanup::execute(older_than, force, all),
+        Some(Commands::Status { name }) => commands::status::execute(name),
         Some(Commands::Completions { shell }) => {
             let mut cmd = Cli::command();
             clap_complete::generate(shell, &mut cmd, "worktree", &mut std::io::stdout());
