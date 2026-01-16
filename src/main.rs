@@ -43,10 +43,10 @@ fn main() -> Result<()> {
         }) => commands::close::execute(name, force, interactive),
         Some(Commands::Open { name, interactive }) => commands::open::execute(name, interactive),
         Some(Commands::Rename {
-            worktree,
             new_name,
+            worktree,
             clear,
-        }) => commands::rename::execute(worktree, new_name, clear),
+        }) => commands::rename::execute(new_name, worktree, clear),
         Some(Commands::List { json, all }) => commands::list::execute(json, all),
         Some(Commands::Cleanup {
             older_than,

@@ -7,7 +7,7 @@ use crate::config::{paths, state::WorktreeState};
 use crate::git;
 use crate::terminal;
 
-pub fn execute(worktree: Option<String>, new_name: Option<String>, clear: bool) -> Result<()> {
+pub fn execute(new_name: Option<String>, worktree: Option<String>, clear: bool) -> Result<()> {
     // Resolve which worktree to rename
     let mut state = resolve_worktree(worktree)?;
 
