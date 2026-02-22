@@ -15,6 +15,11 @@ info() { echo -e "${GREEN}$1${NC}"; }
 warn() { echo -e "${YELLOW}$1${NC}"; }
 error() { echo -e "${RED}$1${NC}" >&2; exit 1; }
 
+# Check if running interactively (has a TTY)
+is_interactive() {
+    [[ -t 0 ]] && [[ -e /dev/tty ]]
+}
+
 # Detect OS and architecture
 detect_platform() {
     local os arch
@@ -73,11 +78,15 @@ install() {
         warn "worktree is already installed (version: $current_version)"
         warn "Location: $existing_binary"
         warn ""
-        printf "Do you want to override the existing installation? [y/N]: "
-        read -r response < /dev/tty
-        if [[ ! "$response" =~ ^[Yy]$ ]]; then
-            info "Installation cancelled."
-            exit 0
+        if is_interactive; then
+            printf "Do you want to override the existing installation? [y/N]: "
+            read -r response < /dev/tty
+            if [[ ! "$response" =~ ^[Yy]$ ]]; then
+                info "Installation cancelled."
+                exit 0
+            fi
+        else
+            info "Non-interactive mode: overriding existing installation."
         fi
         info ""
     fi
@@ -206,6 +215,13 @@ setup_completions() {
         info ""
         info "Shell completions are available. Generate them with:"
         info "  worktree completions bash|zsh|fish"
+        return
+    fi
+
+    if ! is_interactive; then
+        info ""
+        info "Shell completions are available. Generate them with:"
+        info "  worktree completions $detected_shell"
         return
     fi
 
