@@ -96,11 +96,13 @@ impl UserSettings {
         {
             options.extend([
                 ("tmux", "tmux (creates named sessions)"),
+                ("ghostty", "Ghostty"),
                 ("gnome-terminal", "GNOME Terminal"),
                 ("konsole", "Konsole"),
                 ("kitty", "Kitty"),
                 ("alacritty", "Alacritty"),
                 ("xfce4-terminal", "Xfce Terminal"),
+                ("vscode", "VS Code"),
             ]);
         }
 

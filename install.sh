@@ -34,11 +34,6 @@ detect_platform() {
         *) error "Unsupported architecture: $arch" ;;
     esac
 
-    # Linux builds are not currently provided; only macOS releases are available
-    if [[ "$os" == "linux" ]]; then
-        error "Linux builds are not currently provided. Only macOS releases are available. See README for building from source."
-    fi
-
     echo "${BINARY_NAME}-${os}-${arch}"
 }
 

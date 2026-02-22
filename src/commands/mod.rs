@@ -5,6 +5,7 @@ pub mod init;
 pub mod list;
 pub mod new;
 pub mod open;
+pub mod path;
 pub mod rename;
 pub mod run;
 pub mod status;
