@@ -16,8 +16,11 @@ pub enum Terminal {
     // Cross-platform
     Tmux,
     // macOS
+    #[cfg(target_os = "macos")]
     AppleTerminal,
+    #[cfg(target_os = "macos")]
     ITerm2,
+    #[cfg(target_os = "macos")]
     Warp,
     Ghostty,
     VSCode,
@@ -38,8 +41,11 @@ impl Terminal {
     pub fn name(&self) -> &'static str {
         match self {
             Terminal::Tmux => "tmux",
+            #[cfg(target_os = "macos")]
             Terminal::AppleTerminal => "Terminal.app",
+            #[cfg(target_os = "macos")]
             Terminal::ITerm2 => "iTerm2",
+            #[cfg(target_os = "macos")]
             Terminal::Warp => "Warp",
             Terminal::Ghostty => "Ghostty",
             Terminal::VSCode => "VS Code",
@@ -60,8 +66,11 @@ impl Terminal {
     pub fn from_str(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "tmux" => Some(Terminal::Tmux),
+            #[cfg(target_os = "macos")]
             "terminal" | "terminal.app" | "apple_terminal" => Some(Terminal::AppleTerminal),
+            #[cfg(target_os = "macos")]
             "iterm" | "iterm2" => Some(Terminal::ITerm2),
+            #[cfg(target_os = "macos")]
             "warp" => Some(Terminal::Warp),
             "ghostty" => Some(Terminal::Ghostty),
             "vscode" | "code" => Some(Terminal::VSCode),
@@ -85,8 +94,11 @@ pub fn detect_terminal() -> Option<Terminal> {
     // Check TERM_PROGRAM environment variable (macOS)
     if let Ok(term_program) = std::env::var("TERM_PROGRAM") {
         match term_program.as_str() {
+            #[cfg(target_os = "macos")]
             "Apple_Terminal" => return Some(Terminal::AppleTerminal),
+            #[cfg(target_os = "macos")]
             "iTerm.app" => return Some(Terminal::ITerm2),
+            #[cfg(target_os = "macos")]
             "WarpTerminal" => return Some(Terminal::Warp),
             "ghostty" => return Some(Terminal::Ghostty),
             "vscode" => return Some(Terminal::VSCode),
@@ -98,6 +110,9 @@ pub fn detect_terminal() -> Option<Terminal> {
     // Check for Linux terminals by availability
     #[cfg(target_os = "linux")]
     {
+        if which::which("ghostty").is_ok() {
+            return Some(Terminal::Ghostty);
+        }
         if which::which("gnome-terminal").is_ok() {
             return Some(Terminal::GnomeTerminal);
         }
@@ -147,8 +162,11 @@ pub fn launch(terminal: &Terminal, dir: &Path) -> Result<()> {
                 "Use launch_tmux_session for tmux, which requires project and worktree names"
             )
         }
+        #[cfg(target_os = "macos")]
         Terminal::AppleTerminal => launch_apple_terminal(dir_str),
+        #[cfg(target_os = "macos")]
         Terminal::ITerm2 => launch_iterm2(dir_str),
+        #[cfg(target_os = "macos")]
         Terminal::Warp => launch_warp(dir_str),
         Terminal::Ghostty => launch_ghostty(dir_str),
         Terminal::VSCode => launch_vscode(dir_str),
@@ -272,6 +290,7 @@ pub fn rename_tmux_session(old_name: &str, new_name: &str) -> Result<bool> {
     Ok(result.status.success())
 }
 
+#[cfg(target_os = "macos")]
 fn launch_apple_terminal(dir: &str) -> Result<()> {
     let escaped_dir = shell_escape(dir);
     let script = format!(
@@ -290,6 +309,7 @@ fn launch_apple_terminal(dir: &str) -> Result<()> {
     Ok(())
 }
 
+#[cfg(target_os = "macos")]
 fn launch_iterm2(dir: &str) -> Result<()> {
     let escaped_dir = shell_escape(dir);
     let script = format!(
@@ -311,6 +331,7 @@ fn launch_iterm2(dir: &str) -> Result<()> {
     Ok(())
 }
 
+#[cfg(target_os = "macos")]
 fn launch_warp(dir: &str) -> Result<()> {
     let escaped_dir = shell_escape(dir);
     let script = format!(

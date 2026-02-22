@@ -111,6 +111,13 @@ pub enum Commands {
         name: Option<String>,
     },
 
+    /// Print the path of a worktree
+    Path {
+        /// Worktree name (optional, defaults to current worktree)
+        #[arg(add = ArgValueCandidates::new(worktree_names))]
+        name: Option<String>,
+    },
+
     /// Generate shell completion scripts
     Completions {
         /// Shell to generate completions for
